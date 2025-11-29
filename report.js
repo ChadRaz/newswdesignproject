@@ -1,7 +1,8 @@
+// This file was originally written by Alex Jimenez.
 const PDFDocument = require('pdfkit');
 
 // Volunteer block. Used when adding volunteers.
-function volunteer(doc, last, first, id, skills, pref){
+function volunteer(doc, name, id, skills, pref){
 	doc.font(Helvetica, 14);
 	doc.table({
 		columnStyles: ["*", "*", "*", "*"], // Set up 4 columns.
@@ -9,13 +10,13 @@ function volunteer(doc, last, first, id, skills, pref){
             // First row = Headers: Bold text, black underline, size 14.
 			if (i === 0) return {border: [0, 0, 2, 0], borderColor: "black", font: "Helvetica-Bold", fontSize: 14}
             // Other rows = Values: normal text, lighter uderline, size 11.
-            else return {border: [0, 0, 1, 0], borderColor: "lightgray", font: "Helvetica", fontSize: 11};
+            else return {border: [0, 0, 1, 0], borderColor: "lightslategray", font: "Helvetica", fontSize: 11};
         },
 		// ...
 		data: [
-			[{colSpan: 3, text: last + ", " + first}, {align: right, text: id}],
+			[{colSpan: 3, text: name}, {align: right, text: id}],
 			[{colSpan: 4, text: "SKILLS: " + skills.join(", ")}],
-            [{colSpan: 4, text: pref}]
+            [{colSpan: 4, text: "PREFERENCES: " + pref}]
 		],
 	});
     // Query for events attended by the volunteer. Use id.
@@ -29,7 +30,7 @@ function event(doc, name, id, date, time, urgency, skills, desc){
             // First row = Headers: Bold text, black underline, size 14.
 			if (i === 0) return {border: [0, 0, 2, 0], borderColor: "black", font: "Helvetica-Bold", fontSize: 14}
             // Other rows = Values: normal text, lighter uderline, size 11.
-            else return {border: [0, 0, 1, 0], borderColor: "lightgray", font: "Helvetica", fontSize: 11};
+            else return {border: [0, 0, 1, 0], borderColor: "lightslategray", font: "Helvetica", fontSize: 11};
         },
 		// ...
 		data: [
@@ -52,6 +53,7 @@ let time = today.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'
 
 var doc = new PDFDocument({size: 'LETTER'});
 var stream = doc.pipe(blobStream());
+doc.pipe(res); // What does this do, exactly? Does it result in a browser prompt for printing?
 
 doc.font('Helvetica');
 
@@ -81,8 +83,10 @@ if(volunteerList.length() === 0) { // If no volunteers...
 	});
 }
 else for(let i = 0; i < volunteerList.length(); i ++){ // Volunteers are listed from first ID to last ID.
-	volunteer(doc, volunteerList[i].nameL, volunteerList[i].nameF,
-        volunteerList[i].id, volunteerList[i].skills, volunteerList[i].preferences)
+    let preferences = "None";
+    if (volunteerList[i].preferences().length() >= 1) preferences = String(volunteerList[i].preferences());
+	volunteer(doc, volunteerList[i].name, volunteerList[i].id,
+        volunteerList[i].skills, preferences)
     doc.moveDown();
 }
 
@@ -102,12 +106,14 @@ if(eventList.length() === 0) { // Events are listed from most recent onward.
 	});
 }
 else for(let i = eventList.length() - 1; i > -1; i --){
-	event(doc, eventList[i].name, volunteerList[i].id,
-        volunteerList[i].id, volunteerList[i].skills, volunteerList[i].preferences)
+    let description = "No description provided.";
+    if (eventList[i].desc().length() >= 1) description = String(eventList[i].desc());
+    //function event(doc, name, id, date, time, urgency, skills, desc){
+	event(doc, eventList[i].name, eventList[i].id, eventList[i].date,
+        eventList[i].time, eventLit[i].urgency, eventList[i].skills, description);
     doc.moveDown();
 }
 
-
-
 doc.end();
+// Is something supposed to go here?
 
